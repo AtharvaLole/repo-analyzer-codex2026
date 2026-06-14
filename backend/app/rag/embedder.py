@@ -117,13 +117,16 @@ class CodeEmbedder:
         if self.settings.openai_api_key is None:
             return [self._local_embedding(text) for text in texts]
 
-        embeddings_client = self._get_embeddings_client()
-        async_embed = getattr(embeddings_client, "aembed_documents", None)
-        if async_embed is not None:
-            vectors = await async_embed(texts)
-        else:
-            vectors = await asyncio.to_thread(embeddings_client.embed_documents, texts)
-        return [[float(value) for value in vector] for vector in vectors]
+        try:
+            embeddings_client = self._get_embeddings_client()
+            async_embed = getattr(embeddings_client, "aembed_documents", None)
+            if async_embed is not None:
+                vectors = await async_embed(texts)
+            else:
+                vectors = await asyncio.to_thread(embeddings_client.embed_documents, texts)
+            return [[float(value) for value in vector] for vector in vectors]
+        except Exception:
+            return [self._local_embedding(text) for text in texts]
 
     def _local_embedding(self, text: str) -> list[float]:
         """Create a deterministic local embedding for demo/offline indexing."""

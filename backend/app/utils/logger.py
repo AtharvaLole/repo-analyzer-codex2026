@@ -9,6 +9,7 @@ from app.config import Settings
 
 def configure_logging(level: str) -> None:
     """Configure Loguru output."""
+    _configure_utf8_streams()
     logger.remove()
     logger.add(
         sys.stderr,
@@ -16,6 +17,19 @@ def configure_logging(level: str) -> None:
         backtrace=False,
         diagnose=False,
     )
+
+
+def _configure_utf8_streams() -> None:
+    """Use UTF-8 console streams on Windows so LLM output cannot crash logging."""
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
 
 
 def configure_sentry(settings: Settings) -> None:

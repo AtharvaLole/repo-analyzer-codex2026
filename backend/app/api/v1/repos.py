@@ -146,7 +146,9 @@ async def delete_repository(repo_id: str, settings: SettingsDep, cache: RedisCac
 async def _remote_head_sha(github_url: str) -> str | None:
     """Return remote HEAD SHA when Git is available; otherwise None."""
     try:
-        return await asyncio.to_thread(_remote_head_sha_sync, github_url)
+        return await asyncio.wait_for(asyncio.to_thread(_remote_head_sha_sync, github_url), timeout=8)
+    except TimeoutError:
+        return None
     except Exception:
         return None
 

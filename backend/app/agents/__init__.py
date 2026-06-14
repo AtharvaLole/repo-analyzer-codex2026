@@ -89,14 +89,13 @@ def make_agent(
     from crewai import Agent
 
     settings = get_settings()
-    verbose = settings.environment.lower() not in {"production", "prod"}
     return Agent(
         role=role,
         goal=goal,
         backstory=backstory,
         tools=list(tools or []),
         llm=llm,
-        verbose=verbose,
+        verbose=False,
         max_iter=5,
         memory=False,
     )

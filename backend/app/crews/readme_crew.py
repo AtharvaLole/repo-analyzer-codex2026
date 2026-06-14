@@ -45,14 +45,17 @@ class ReadmeCrew:
                 await cache.set_model(cache_key, result, ttl_seconds=README_CACHE_TTL_SECONDS)
                 return result
 
-            crew = self._build_crew(repo_id)
-            output = await asyncio.to_thread(crew.kickoff)
-            content = _crew_output_to_text(output)
-            result = ReadmeResult(
-                content=content,
-                confidence=_extract_confidence(content),
-                sections=_extract_markdown_sections(content),
-            )
+            try:
+                crew = self._build_crew(repo_id)
+                output = await asyncio.to_thread(crew.kickoff)
+                content = _crew_output_to_text(output)
+                result = ReadmeResult(
+                    content=content,
+                    confidence=_extract_confidence(content),
+                    sections=_extract_markdown_sections(content),
+                )
+            except Exception:
+                result = await self._local_readme(cache=cache, repo_id=repo_id)
             await cache.set_model(cache_key, result, ttl_seconds=README_CACHE_TTL_SECONDS)
             return result
         finally:
