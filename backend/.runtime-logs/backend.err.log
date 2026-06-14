@@ -1,0 +1,5 @@
+INFO:     Started server process [14624]
+INFO:     Waiting for application startup.
+2026-06-14 13:49:59.478 | INFO     | app.main:startup:59 - API ready. Redis status: error: Error 22 connecting to localhost:6379. 22.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)

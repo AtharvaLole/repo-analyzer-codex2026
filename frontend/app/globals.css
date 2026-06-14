@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 8%;
+    --primary: 173 80% 24%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 37 86% 46%;
+    --secondary-foreground: 24 10% 10%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 42%;
+    --accent: 225 58% 95%;
+    --accent-foreground: 226 54% 24%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 88%;
+    --input: 240 6% 88%;
+    --ring: 173 80% 24%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 7%;
+    --foreground: 0 0% 96%;
+    --card: 240 8% 10%;
+    --card-foreground: 0 0% 96%;
+    --popover: 240 8% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 174 72% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 39 85% 55%;
+    --secondary-foreground: 24 12% 10%;
+    --muted: 240 6% 15%;
+    --muted-foreground: 240 5% 68%;
+    --accent: 226 28% 18%;
+    --accent-foreground: 222 80% 88%;
+    --destructive: 0 70% 44%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 20%;
+    --input: 240 6% 20%;
+    --ring: 174 72% 38%;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    @apply bg-background text-foreground antialiased;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+}

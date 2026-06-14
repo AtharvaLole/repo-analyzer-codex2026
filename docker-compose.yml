@@ -1,0 +1,54 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env.example
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_PATH: .data/chroma
+      CHROMA_PERSIST_DIR: .data/chroma
+      REPO_STORAGE_PATH: .data/repos
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend-data:/app/.data
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env.example
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    command: celery -A app.tasks.celery_app.celery_app worker --loglevel=INFO
+    volumes:
+      - backend-data:/app/.data
+    depends_on:
+      - redis
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+    env_file:
+      - ./frontend/.env.example
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:
+  redis-data:
