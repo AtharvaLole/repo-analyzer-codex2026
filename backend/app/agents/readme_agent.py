@@ -33,10 +33,6 @@ class ReadmeAgent:
             sections.extend(
                 ["", "## Architecture", "Summarize services, workflows, data stores, and agent responsibilities."],
             )
-        if request.include_deployment:
-            sections.extend(
-                ["", "## Deployment", f"Deploy the API from the `{settings.environment}` configuration profile."],
-            )
         return "\n".join(sections)
 
 

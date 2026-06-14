@@ -121,7 +121,6 @@ export type ReadmeRequest = ReadmeGenerateRequest & {
   audience?: string;
   include_setup?: boolean;
   include_architecture?: boolean;
-  include_deployment?: boolean;
 };
 
 export type TaskQueuedResponse = {

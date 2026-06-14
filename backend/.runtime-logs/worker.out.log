@@ -1,0 +1,22 @@
+ 
+ -------------- celery@Atharva v5.4.0 (opalescent)
+--- ***** ----- 
+-- ******* ---- Windows-10-10.0.26200-SP0 2026-06-14 14:47:28
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         repo_analyzer:0x2a3b72ea610
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 12 (solo)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> indexing         exchange=indexing(direct) key=indexing
+                .> readme           exchange=readme(direct) key=readme
+
+[tasks]
+  . app.tasks.index_repository
+  . tasks.cleanup_old_repos
+  . tasks.generate_readme
+  . tasks.index_repo
+

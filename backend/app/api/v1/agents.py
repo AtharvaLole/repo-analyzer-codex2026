@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from celery.result import AsyncResult
 from fastapi import APIRouter
 
 from app.dependencies import RedisCacheDep
 from app.models.response import AgentStatus, AgentTaskStatusResponse, AgentsStatusResponse
-from app.tasks import celery_app
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -30,10 +28,9 @@ async def get_agents_status() -> AgentsStatusResponse:
 
 @router.get("/status/{task_id}", response_model=AgentTaskStatusResponse)
 async def get_agent_task_status(task_id: str, cache: RedisCacheDep) -> AgentTaskStatusResponse:
-    """Return Celery task status plus agent progress details from Redis."""
+    """Return local background task progress from Redis."""
     progress = await cache.get_json(f"task:{task_id}:progress") or {}
-    celery_status = AsyncResult(task_id, app=celery_app).status
-    status_value = str(progress.get("status") or _normalize_celery_status(celery_status))
+    status_value = str(progress.get("status") or "queued")
     return AgentTaskStatusResponse(
         task_id=task_id,
         status=status_value,
@@ -45,16 +42,6 @@ async def get_agent_task_status(task_id: str, cache: RedisCacheDep) -> AgentTask
         started_at=str(progress.get("started_at")) if progress.get("started_at") is not None else None,
         updated_at=str(progress.get("updated_at")) if progress.get("updated_at") is not None else None,
     )
-
-
-def _normalize_celery_status(status: str) -> str:
-    if status == "SUCCESS":
-        return "ready"
-    if status == "FAILURE":
-        return "failed"
-    if status in {"PENDING", "STARTED", "RETRY", "RECEIVED"}:
-        return "indexing"
-    return status.lower()
 
 
 __all__ = ["router"]

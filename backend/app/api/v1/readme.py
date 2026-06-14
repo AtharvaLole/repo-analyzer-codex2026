@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
 from app.crews.readme_crew import ReadmeResult
-from app.dependencies import RedisCacheDep
+from app.dependencies import RedisCacheDep, SettingsDep
 from app.models.request import ReadmeGenerateRequest
 from app.models.response import ReadmeResponse, TaskQueuedResponse
-from app.tasks import generate_readme
+from app.tasks.local_jobs import run_generate_readme_job
 
 router = APIRouter(prefix="/readme", tags=["readme"])
 
@@ -18,17 +19,19 @@ router = APIRouter(prefix="/readme", tags=["readme"])
 @router.post("/generate", response_model=TaskQueuedResponse, status_code=status.HTTP_202_ACCEPTED)
 async def generate_readme_endpoint(
     payload: ReadmeGenerateRequest,
+    background_tasks: BackgroundTasks,
+    settings: SettingsDep,
     cache: RedisCacheDep,
 ) -> TaskQueuedResponse:
     """Queue README generation."""
     if payload.force_regenerate:
         await cache.delete_pattern(f"readme:{payload.repo_id}:*")
 
-    task = generate_readme.delay(payload.repo_id)
+    task_id = str(uuid.uuid4())
     await cache.set_json_persistent(
-        f"task:{task.id}:progress",
+        f"task:{task_id}:progress",
         {
-            "task_id": str(task.id),
+            "task_id": task_id,
             "status": "queued",
             "percent": 0,
             "progress": 0,
@@ -40,7 +43,8 @@ async def generate_readme_endpoint(
             "completed_steps": [],
         },
     )
-    return TaskQueuedResponse(task_id=str(task.id), status="queued")
+    background_tasks.add_task(run_generate_readme_job, payload.repo_id, task_id, settings)
+    return TaskQueuedResponse(task_id=task_id, status="queued")
 
 
 @router.get("/{repo_id}", response_model=ReadmeResponse)

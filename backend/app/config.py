@@ -20,8 +20,6 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
     redis_url: str = "redis://localhost:6379/0"
-    celery_broker_url: str | None = Field(default=None, validation_alias="CELERY_BROKER_URL")
-    celery_result_backend: str | None = Field(default=None, validation_alias="CELERY_RESULT_BACKEND")
     chroma_path: Path = Field(default=Path("./.data/chroma"), validation_alias="CHROMA_PATH")
     chroma_persist_dir: Path | None = Field(default=None, validation_alias="CHROMA_PERSIST_DIR")
     repo_storage_path: Path = Path("./.data/repos")
@@ -44,16 +42,6 @@ class Settings(BaseSettings):
     def CHROMA_PERSIST_DIR(self) -> Path:
         """Compatibility property for prompt-level settings naming."""
         return self.chroma_persist_dir or self.chroma_path
-
-    @property
-    def CELERY_BROKER_URL(self) -> str:
-        """Compatibility property for Celery broker configuration."""
-        return self.celery_broker_url or self.redis_url
-
-    @property
-    def CELERY_RESULT_BACKEND(self) -> str:
-        """Compatibility property for Celery result backend configuration."""
-        return self.celery_result_backend or self.redis_url
 
     model_config = SettingsConfigDict(
         env_file=".env",

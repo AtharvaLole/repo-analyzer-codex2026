@@ -1,5 +1,17 @@
-INFO:     Started server process [14624]
+INFO:     Started server process [15432]
 INFO:     Waiting for application startup.
-2026-06-14 13:49:59.478 | INFO     | app.main:startup:59 - API ready. Redis status: error: Error 22 connecting to localhost:6379. 22.
+2026-06-14 14:57:01.017 | INFO     | app.main:startup:59 - API ready. Redis status: ok
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-06-14 15:47:56.247 | INFO     | app.main:log_requests:47 - GET /health -> 200 (1079.6 ms)
+2026-06-14 15:48:42.040 | INFO     | app.main:log_requests:47 - OPTIONS /api/v1/repos/index -> 200 (0.6 ms)
+2026-06-14 15:48:43.114 | INFO     | app.main:log_requests:47 - POST /api/v1/repos/index -> 202 (1070.7 ms)
+2026-06-14 15:48:43.741 | INFO     | app.main:log_requests:47 - GET /api/v1/repos/334f1886617a/files -> 200 (7.7 ms)
+2026-06-14 15:48:43.744 | INFO     | app.main:log_requests:47 - GET /api/v1/repos/334f1886617a/status -> 200 (9.9 ms)
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-06-14 15:48:46.756 | INFO     | app.main:log_requests:47 - GET /api/v1/repos/334f1886617a/status -> 200 (4.4 ms)
+2026-06-14 15:49:00.295 | INFO     | app.main:log_requests:47 - GET /api/v1/repos/334f1886617a/status -> 200 (4.0 ms)
+2026-06-14 15:49:00.301 | INFO     | app.main:log_requests:47 - GET /api/v1/repos/334f1886617a/files -> 200 (2.9 ms)
+2026-06-14 15:49:21.748 | INFO     | app.main:log_requests:47 - GET /health -> 200 (1484.7 ms)
+2026-06-14 15:49:42.976 | INFO     | app.main:log_requests:47 - GET /api/v1/repos/334f1886617a/status -> 200 (2.6 ms)

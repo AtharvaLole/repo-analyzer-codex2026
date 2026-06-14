@@ -16,6 +16,7 @@ from app.rag.chunker import CodeChunk
 EMBEDDING_CACHE_TTL_SECONDS = 86_400
 EMBEDDING_BATCH_SIZE = 100
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+LOCAL_EMBEDDING_DIMENSIONS = 384
 
 
 class EmbeddingError(RuntimeError):
@@ -114,7 +115,7 @@ class CodeEmbedder:
 
     async def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         if self.settings.openai_api_key is None:
-            raise EmbeddingError("OPENAI_API_KEY is required to generate embeddings.")
+            return [self._local_embedding(text) for text in texts]
 
         embeddings_client = self._get_embeddings_client()
         async_embed = getattr(embeddings_client, "aembed_documents", None)
@@ -123,6 +124,24 @@ class CodeEmbedder:
         else:
             vectors = await asyncio.to_thread(embeddings_client.embed_documents, texts)
         return [[float(value) for value in vector] for vector in vectors]
+
+    def _local_embedding(self, text: str) -> list[float]:
+        """Create a deterministic local embedding for demo/offline indexing."""
+        vector = [0.0] * LOCAL_EMBEDDING_DIMENSIONS
+        tokens = re.findall(r"[A-Za-z_][A-Za-z0-9_]*|[0-9]+", text.lower())
+        if not tokens:
+            return vector
+
+        for token in tokens:
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            bucket = int.from_bytes(digest[:4], "big") % LOCAL_EMBEDDING_DIMENSIONS
+            sign = 1.0 if digest[4] % 2 == 0 else -1.0
+            vector[bucket] += sign
+
+        magnitude = sum(value * value for value in vector) ** 0.5
+        if magnitude == 0:
+            return vector
+        return [value / magnitude for value in vector]
 
     def _get_embeddings_client(self) -> Any:
         if self._embeddings_client is not None:
@@ -299,4 +318,5 @@ __all__ = [
     "EMBEDDING_BATCH_SIZE",
     "EMBEDDING_CACHE_TTL_SECONDS",
     "EmbeddingError",
+    "LOCAL_EMBEDDING_DIMENSIONS",
 ]

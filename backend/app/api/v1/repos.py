@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 import shutil
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from celery.result import AsyncResult
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
 from app.dependencies import RedisCacheDep, SettingsDep
 from app.models.request import IndexRequest, RepositoryIndexRequest
@@ -22,7 +23,7 @@ from app.models.response import (
     RepoStatusResponse,
 )
 from app.rag.embedder import CodeEmbedder
-from app.tasks import celery_app, index_repo
+from app.tasks.local_jobs import run_index_repo_job
 
 router = APIRouter(prefix="/repos", tags=["repos"])
 
@@ -36,6 +37,7 @@ def create_repo_id(repository_url: str) -> str:
 @router.post("/index", response_model=RepoIndexQueuedResponse, status_code=status.HTTP_202_ACCEPTED)
 async def index_repository(
     payload: IndexRequest,
+    background_tasks: BackgroundTasks,
     settings: SettingsDep,
     cache: RedisCacheDep,
 ) -> RepoIndexQueuedResponse:
@@ -54,12 +56,12 @@ async def index_repository(
             result=_cached_index_result(repo_id=repo_id, meta=meta or {}, files_payload=files_payload),
         )
 
-    task = index_repo.delay(repo_id, payload.github_url)
-    await cache.set_string(f"repo:{repo_id}:latest_task_id", str(task.id))
+    task_id = str(uuid.uuid4())
+    await cache.set_string(f"repo:{repo_id}:latest_task_id", task_id)
     await cache.set_json_persistent(
-        f"task:{task.id}:progress",
+        f"task:{task_id}:progress",
         {
-            "task_id": str(task.id),
+            "task_id": task_id,
             "status": "queued",
             "percent": 0,
             "progress": 0,
@@ -71,18 +73,21 @@ async def index_repository(
             "completed_steps": [],
         },
     )
-    return RepoIndexQueuedResponse(repo_id=repo_id, task_id=str(task.id), status="queued")
+    background_tasks.add_task(run_index_repo_job, repo_id, payload.github_url, task_id, settings)
+    return RepoIndexQueuedResponse(repo_id=repo_id, task_id=task_id, status="queued")
 
 
 @router.post("", response_model=RepoIndexQueuedResponse, status_code=status.HTTP_202_ACCEPTED)
 async def index_repository_legacy(
     payload: RepositoryIndexRequest,
+    background_tasks: BackgroundTasks,
     settings: SettingsDep,
     cache: RedisCacheDep,
 ) -> RepoIndexQueuedResponse:
     """Backward-compatible repository indexing endpoint."""
     return await index_repository(
         IndexRequest(github_url=str(payload.repository_url), repo_id=payload.repo_id),
+        background_tasks,
         settings,
         cache,
     )
@@ -90,7 +95,7 @@ async def index_repository_legacy(
 
 @router.get("/{repo_id}/status", response_model=RepoStatusResponse)
 async def get_repository_status(repo_id: str, cache: RedisCacheDep) -> RepoStatusResponse:
-    """Return repository indexing status from Redis and Celery."""
+    """Return repository indexing status from Redis."""
     meta = await cache.get_json(f"repo:{repo_id}:meta")
     if meta is not None:
         return RepoStatusResponse(repo_id=repo_id, status="ready", meta=meta)
@@ -99,14 +104,11 @@ async def get_repository_status(repo_id: str, cache: RedisCacheDep) -> RepoStatu
     if not task_id:
         return RepoStatusResponse(repo_id=repo_id, status="failed", meta=None)
 
-    task_status = AsyncResult(task_id, app=celery_app).status
-    if task_status == "FAILURE":
-        status_value = "failed"
-    elif task_status == "SUCCESS":
-        status_value = "ready"
-    else:
-        status_value = "indexing"
-    return RepoStatusResponse(repo_id=repo_id, status=status_value, meta=None)
+    task_progress = await cache.get_json(f"task:{task_id}:progress")
+    if task_progress is not None and task_progress.get("status") == "failed":
+        return RepoStatusResponse(repo_id=repo_id, status="failed", meta=task_progress)
+
+    return RepoStatusResponse(repo_id=repo_id, status="indexing", meta=task_progress)
 
 
 @router.get("/{repo_id}", response_model=RepoStatusResponse)
@@ -152,7 +154,13 @@ async def _remote_head_sha(github_url: str) -> str | None:
 def _remote_head_sha_sync(github_url: str) -> str | None:
     from git.cmd import Git
 
-    output = Git().ls_remote(github_url, "HEAD")
+    env = dict(os.environ)
+    for key in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+        env.pop(key, None)
+    output = Git().execute(
+        ["git", "-c", "http.sslBackend=openssl", "ls-remote", github_url, "HEAD"],
+        env=env,
+    )
     return output.split()[0] if output.strip() else None
 
 

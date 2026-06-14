@@ -93,7 +93,6 @@ class ReadmeRequest(BaseModel):
     audience: str = Field(default="engineering team", min_length=1, max_length=128)
     include_setup: bool = True
     include_architecture: bool = True
-    include_deployment: bool = True
 
 
 class ReadmeGenerateRequest(BaseModel):

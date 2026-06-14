@@ -1,62 +1,59 @@
-# AI-Powered Software Engineering Assistant
+# AI-Powered Repo Analyzer
 
-Production-grade monorepo scaffold for a repository analysis assistant using FastAPI, CrewAI, LangGraph, ChromaDB, Redis, Celery, Next.js, Tailwind CSS, and Clerk.
+Local demo app for analyzing GitHub repositories with FastAPI, Redis, ChromaDB, and a Next.js interface.
 
-## Structure
+This version is intentionally optimized for running in front of judges. Docker, deployment workflows, and production hosting files have been removed.
 
-- `backend/`: FastAPI API, agent layer, LangGraph workflow, RAG indexing, Redis cache, Celery tasks, tests, and Dockerfile.
-- `frontend/`: Next.js 14 App Router UI, Clerk wrapper, Tailwind styling, typed API client, and Dockerfile.
-- `.github/workflows/`: CI and deployment workflows for GitHub Actions.
-- `docker-compose.yml`: Local Redis, backend, worker, and frontend services.
-- `docker-compose.prod.yml`: Production-style backend, worker, and Redis services.
+## What Runs
 
-## Local Development
+- Backend API: `http://localhost:8000`
+- Frontend UI: `http://localhost:3000`
+- Redis: `localhost:6379`
+- FastAPI background tasks: indexing and README jobs
 
-Backend:
+## Demo Behavior
 
-```bash
+The app can index repositories locally without an OpenAI key. If `OPENAI_API_KEY` is missing, it uses deterministic local embeddings and local citation-based answers so the demo does not get stuck during indexing.
+
+Set `OPENAI_API_KEY` only when you want full cloud LLM reasoning.
+
+## Backend
+
+Use Python 3.11.
+
+```powershell
 cd backend
 python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn app.main:app --reload
+.\.venv\Scripts\Activate.ps1
+pip install --use-deprecated=legacy-resolver -r requirements.txt
+$env:DEBUG="true"
+$env:REDIS_URL="redis://localhost:6379/0"
+$env:CHROMA_PERSIST_DIR=".data/chroma"
+$env:REPOS_BASE_DIR=".data/repos"
+uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Frontend:
+## Frontend
 
-```bash
+```powershell
 cd frontend
 npm install
-cp .env.example .env.local
-npm run dev
+npm run dev -- -p 3000
 ```
 
-Docker Compose:
+## Redis
 
-```bash
-docker compose up --build
+Run any local Redis server on port `6379`. This workspace also supports the portable Windows Redis binary under `.tools/redis-windows` if present:
+
+```powershell
+.\.tools\redis-windows\redis-server.exe --port 6379
 ```
 
-The API runs on `http://localhost:8000` and the frontend runs on `http://localhost:3000`.
+## Quick Check
 
-## Environment
+```powershell
+Invoke-WebRequest http://localhost:8000/health
+Invoke-WebRequest http://localhost:3000
+```
 
-Copy the example files before running locally:
-
-- `backend/.env.example` to `backend/.env`
-- `frontend/.env.example` to `frontend/.env.local`
-
-Secrets such as `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CLERK_SECRET_KEY`, and `SENTRY_DSN` are intentionally empty in example files.
-
-## Backend Notes
-
-The backend uses Pydantic v2 settings, async FastAPI endpoints, a ChromaDB-backed retriever, BM25 keyword scoring, Redis helpers, Celery task scaffolding, CrewAI crew builders, and a LangGraph workflow assembly. The RAG chunker is line-aware and ready for language-specific Tree-sitter grammar integration.
-
-## Frontend Notes
-
-The frontend starts at `/dashboard` and includes repository indexing, agent status, repository chat, code citations, and README generation screens. Clerk is wired at the root layout so authentication can be enforced as routes mature.
-
-## CI/CD
-
-`ci.yml` installs backend and frontend dependencies, runs backend tests, and builds the frontend. `deploy.yml` is configured for Railway and Vercel using GitHub Secrets.
+Then open `http://localhost:3000`, paste a GitHub repo URL, and wait for indexing to complete.

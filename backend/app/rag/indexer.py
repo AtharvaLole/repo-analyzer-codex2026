@@ -48,19 +48,34 @@ class RepoIndexer:
 
     def clone_repo(self, github_url: str, repo_id: str) -> Path:
         """Clone a repository into REPOS_BASE_DIR/{repo_id}, or pull if it already exists."""
-        from git import GitCommandError, InvalidGitRepositoryError, Repo
+        from git import Git, GitCommandError, InvalidGitRepositoryError, Repo
 
         repo_path = self._repos_base_dir / repo_id
         self._repos_base_dir.mkdir(parents=True, exist_ok=True)
 
         try:
             if repo_path.exists():
-                repo = Repo(repo_path)
-                repo.remotes.origin.pull()
+                self._remove_stale_git_locks(repo_path)
+                Git().execute(
+                    ["git", "-c", "http.sslBackend=openssl", "-C", str(repo_path), "pull"],
+                    env=self._git_env(),
+                )
             else:
-                Repo.clone_from(github_url, repo_path)
+                Git().execute(
+                    [
+                        "git",
+                        "-c",
+                        "http.sslBackend=openssl",
+                        "clone",
+                        github_url,
+                        str(repo_path),
+                    ],
+                    env=self._git_env(),
+                )
         except (GitCommandError, InvalidGitRepositoryError, OSError) as exc:
-            raise CloneFailedError(f"Failed to clone or update repository '{github_url}'.") from exc
+            raise CloneFailedError(
+                f"Failed to clone or update repository '{github_url}': {exc}",
+            ) from exc
 
         self._validate_repo_size(repo_path)
         return repo_path
@@ -160,6 +175,30 @@ class RepoIndexer:
                 except OSError as exc:
                     raise IndexingError(f"Could not stat file '{file_path}'.") from exc
         return total_bytes / (1024 * 1024)
+
+    def _git_env(self) -> dict[str, str]:
+        env = dict(os.environ)
+        for key in (
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+            "http_proxy",
+            "https_proxy",
+            "all_proxy",
+        ):
+            env.pop(key, None)
+        env["GIT_TERMINAL_PROMPT"] = "0"
+        return env
+
+    def _remove_stale_git_locks(self, repo_path: Path) -> None:
+        git_dir = repo_path / ".git"
+        if not git_dir.exists():
+            return
+        for lock_file in git_dir.rglob("*.lock"):
+            try:
+                lock_file.unlink()
+            except OSError:
+                continue
 
     @property
     def _repos_base_dir(self) -> Path:

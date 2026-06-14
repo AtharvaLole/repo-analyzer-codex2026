@@ -50,6 +50,11 @@ class QACrew:
             if cached is not None:
                 return cached
 
+            if self.settings.openai_api_key is None and self.settings.anthropic_api_key is None:
+                result = await self._local_answer(repo_id=repo_id, question=question)
+                await cache.set_model(cache_key, result, ttl_seconds=QA_CACHE_TTL_SECONDS)
+                return result
+
             crew = self._build_crew(repo_id=repo_id, question=question)
             citation_results_task = asyncio.create_task(
                 self._candidate_citations(repo_id=repo_id, question=question),
@@ -70,6 +75,32 @@ class QACrew:
         finally:
             if self.cache is None:
                 await cache.close()
+
+    async def _local_answer(self, repo_id: str, question: str) -> QAResult:
+        citations = await self._candidate_citations(repo_id=repo_id, question=question)
+        if not citations:
+            return QAResult(
+                answer=(
+                    "I could not find matching indexed code for that question. "
+                    "Try asking about a file, function, route, dependency, or feature name."
+                ),
+                citations=[],
+                confidence=45,
+            )
+
+        reference_lines = [
+            f"- {citation.file_path}:{citation.start_line}-{citation.end_line}"
+            for citation in citations[:6]
+        ]
+        answer = (
+            "Local demo analysis found the most relevant indexed code for your question.\n\n"
+            f"Question: {question}\n\n"
+            "Best matching references:\n"
+            + "\n".join(reference_lines)
+            + "\n\nOpen the citations to inspect the exact code snippets. "
+            "Set OPENAI_API_KEY to enable full natural-language agent reasoning."
+        )
+        return QAResult(answer=answer, citations=citations, confidence=72)
 
     async def _candidate_citations(self, repo_id: str, question: str) -> list[Citation]:
         try:
