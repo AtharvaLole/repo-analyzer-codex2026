@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Check, Copy, Loader2, SendHorizontal } from "lucide-react";
+import { Bot, Check, Copy, Loader2, SendHorizontal, Sparkles } from "lucide-react";
 
 import { askRepositoryQuestion } from "@/lib/api";
 import type { ChatHistoryItem, ChatMessage, SourceCitation } from "@/lib/types";
@@ -78,7 +78,6 @@ export function ChatWindow({ repoId, initialHistory = [], suggestedQuestions = [
         message: trimmed,
         history: messages.map(({ role, content }) => ({ role, content })),
       });
-      await revealAssistantMessage(assistantId, response.answer);
       setMessages((current) =>
         current.map((item) =>
           item.id === assistantId
@@ -96,17 +95,6 @@ export function ChatWindow({ repoId, initialHistory = [], suggestedQuestions = [
     }
   }
 
-  async function revealAssistantMessage(messageId: string, answer: string) {
-    let visible = "";
-    for (const character of answer) {
-      visible += character;
-      setMessages((current) =>
-        current.map((item) => (item.id === messageId ? { ...item, content: visible } : item)),
-      );
-      await wait(3);
-    }
-  }
-
   async function copyAnswer(item: ThreadMessage) {
     await navigator.clipboard.writeText(item.content);
     setCopiedId(item.id);
@@ -114,15 +102,40 @@ export function ChatWindow({ repoId, initialHistory = [], suggestedQuestions = [
   }
 
   return (
-    <div className="rounded-lg border bg-card">
-      <div className="min-h-[520px] space-y-5 p-4">
+    <div className="flex h-[calc(100vh-12rem)] min-h-[620px] flex-col overflow-hidden rounded-lg border bg-card shadow-sm">
+      <div className="flex items-center justify-between border-b bg-muted/35 px-5 py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <Bot className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-semibold">Repository Chat</h2>
+            <p className="truncate text-xs text-muted-foreground">Grounded answers with file citations</p>
+          </div>
+        </div>
+        <Badge className="hidden shrink-0 gap-1.5 border-border bg-background text-foreground sm:inline-flex">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+          Indexed RAG
+        </Badge>
+      </div>
+
+      <div className="flex-1 space-y-5 overflow-y-auto p-5">
         {messages.length === 0 ? (
-          <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 text-center">
-            <p className="text-sm text-muted-foreground">Ask a codebase question.</p>
+          <div className="flex min-h-full flex-col items-center justify-center gap-5 text-center">
+            <div>
+              <h3 className="text-lg font-semibold">Ask about this codebase</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Architecture, routes, auth, models, risks, or setup.</p>
+            </div>
             {suggestedQuestions.length ? (
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="grid w-full max-w-2xl gap-2 sm:grid-cols-2">
                 {suggestedQuestions.map((question) => (
-                  <Button key={question} type="button" variant="outline" size="sm" onClick={() => void sendQuestion(question)}>
+                  <Button
+                    key={question}
+                    type="button"
+                    variant="outline"
+                    className="h-auto justify-start whitespace-normal px-3 py-2 text-left text-xs"
+                    onClick={() => void sendQuestion(question)}
+                  >
                     {question}
                   </Button>
                 ))}
@@ -131,15 +144,20 @@ export function ChatWindow({ repoId, initialHistory = [], suggestedQuestions = [
           </div>
         ) : (
           messages.map((item) => (
-            <article key={item.id} className={item.role === "user" ? "ml-auto max-w-3xl text-right" : "max-w-3xl"}>
+            <article key={item.id} className={item.role === "user" ? "ml-auto max-w-[78%] text-right" : "max-w-[86%]"}>
               {item.role === "user" ? (
-                <div className="inline-block rounded-lg bg-primary px-4 py-3 text-left text-sm text-primary-foreground">
+                <div className="inline-block rounded-lg bg-primary px-4 py-3 text-left text-sm leading-6 text-primary-foreground shadow-sm">
                   <p className="whitespace-pre-wrap">{item.content}</p>
                 </div>
               ) : (
-                <div className="rounded-lg border bg-muted px-4 py-3 text-sm text-foreground">
-                  <div className="flex items-start justify-between gap-3">
-                    <ConfidenceBadge confidence={item.confidence ?? 0} />
+                <div className="rounded-lg border bg-background px-4 py-4 text-sm text-foreground shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                        <Bot className="h-4 w-4" aria-hidden="true" />
+                      </div>
+                      <ConfidenceBadge confidence={item.confidence ?? 0} />
+                    </div>
                     <Button
                       type="button"
                       variant="ghost"
@@ -154,11 +172,11 @@ export function ChatWindow({ repoId, initialHistory = [], suggestedQuestions = [
                       )}
                     </Button>
                   </div>
-                  <div data-color-mode="light" className="mt-3">
+                  <div data-color-mode="light" className="prose-chat mt-3">
                     {item.content ? <MarkdownPreview source={item.content} /> : <TypingDots />}
                   </div>
                   {item.citations?.length ? (
-                    <details className="mt-4 rounded-md border bg-background p-3">
+                    <details className="mt-4 rounded-md border bg-muted/35 p-3">
                       <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">
                         Citations ({item.citations.length})
                       </summary>
@@ -176,23 +194,26 @@ export function ChatWindow({ repoId, initialHistory = [], suggestedQuestions = [
         )}
 
         {isLoading ? (
-          <AgentStatusPanel
-            loading
-            activeAgents={["retrieval", "code_analysis", "review"]}
-            currentStep="Retrieving and analysing code..."
-          />
+          <div className="max-w-[86%]">
+            <AgentStatusPanel
+              loading
+              activeAgents={["retrieval", "code_analysis"]}
+              currentStep="Retrieving indexed code and preparing citations..."
+            />
+          </div>
         ) : null}
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={onSubmit} className="border-t p-4">
+      <form onSubmit={onSubmit} className="border-t bg-background p-4">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
           <Textarea
             value={message}
             placeholder="Ask about architecture, tests, security, or implementation details"
+            className="min-h-[52px] resize-none"
             onChange={(event) => setMessage(event.target.value)}
           />
-          <Button type="submit" disabled={isLoading || !message.trim()}>
+          <Button type="submit" className="h-[52px] px-5" disabled={isLoading || !message.trim()}>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
@@ -245,8 +266,4 @@ function historyToMessages(history: ChatHistoryItem[]): ThreadMessage[] {
       confidence: item.confidence,
     },
   ]);
-}
-
-function wait(ms: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }

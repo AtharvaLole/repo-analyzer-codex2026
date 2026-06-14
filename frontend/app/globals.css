@@ -66,6 +66,26 @@
     @apply bg-background text-foreground antialiased;
   }
 
+  .prose-chat .wmde-markdown {
+    background: transparent !important;
+    color: inherit !important;
+    font-family: inherit !important;
+    font-size: 0.875rem !important;
+    line-height: 1.65 !important;
+  }
+
+  .prose-chat .wmde-markdown pre {
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+  }
+
+  .prose-chat .wmde-markdown p,
+  .prose-chat .wmde-markdown ul,
+  .prose-chat .wmde-markdown ol {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
   button,
   input,
   textarea {

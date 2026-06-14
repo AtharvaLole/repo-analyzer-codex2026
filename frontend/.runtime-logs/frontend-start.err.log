@@ -1,0 +1,31 @@
+ ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+ ⨯ Error: Cannot find module './vendor-chunks/@clerk.js'
+Require stack:
+- C:\Multiagent-repo-analyzer\frontend\.next\server\webpack-runtime.js
+- C:\Multiagent-repo-analyzer\frontend\.next\server\pages\_document.js
+- C:\Multiagent-repo-analyzer\frontend\node_modules\next\dist\server\require.js
+- C:\Multiagent-repo-analyzer\frontend\node_modules\next\dist\server\next-server.js
+- C:\Multiagent-repo-analyzer\frontend\node_modules\next\dist\server\next.js
+- C:\Multiagent-repo-analyzer\frontend\node_modules\next\dist\server\lib\start-server.js
+- C:\Multiagent-repo-analyzer\frontend\node_modules\next\dist\cli\next-start.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1401:15)
+    at C:\Multiagent-repo-analyzer\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1487:12)
+    at mod.require (C:\Multiagent-repo-analyzer\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:135:16) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Multiagent-repo-analyzer\\frontend\\.next\\server\\webpack-runtime.js',
+    'C:\\Multiagent-repo-analyzer\\frontend\\.next\\server\\pages\\_document.js',
+    'C:\\Multiagent-repo-analyzer\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Multiagent-repo-analyzer\\frontend\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Multiagent-repo-analyzer\\frontend\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Multiagent-repo-analyzer\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Multiagent-repo-analyzer\\frontend\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
