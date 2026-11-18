@@ -2,8 +2,8 @@ services:
   - type: web
     name: repo-analyzer-api
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     plan: starter
     region: oregon
     healthCheckPath: /health

@@ -1,0 +1,30 @@
+# Ignore frontend from backend docker build
+frontend/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.venv311/
+backend/.venv/
+backend/.venv311/
+
+# Data & logs
+.data/
+backend/.data/
+.runtime-logs/
+.tools/
+.agents/
+
+# Environment files
+.env
+.env.local
+backend/.env
+frontend/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
