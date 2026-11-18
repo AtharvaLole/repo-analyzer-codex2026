@@ -25,6 +25,13 @@ backend/.data/
 dist/
 build/
 
+# Local-only tooling and logs
+.tools/
+.runtime-logs/
+backend/.runtime-logs/
+frontend/.runtime-logs/
+.agents/
+
 # OS and editor
 .DS_Store
 Thumbs.db

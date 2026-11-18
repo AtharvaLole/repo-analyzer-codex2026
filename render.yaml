@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: repo-analyzer-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: CORS_ORIGINS
+        sync: false                       # set after Vercel deploy
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: repo-analyzer-redis
+          property: connectionString
+      - key: CHROMA_PATH
+        value: /data/chroma
+      - key: CHROMA_PERSIST_DIR
+        value: /data/chroma
+      - key: REPO_STORAGE_PATH
+        value: /data/repos
+      - key: REPOS_BASE_DIR
+        value: /data/repos
+      - key: MAX_REPO_SIZE_MB
+        value: "250"
+      - key: LLM_PROVIDER
+        value: openai
+      - key: CHAT_MODEL
+        value: gpt-4o
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: OPENAI_API_KEY
+        sync: false                       # paste in Render dashboard
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: CLERK_ISSUER
+        sync: false
+      - key: CLERK_JWKS_URL
+        sync: false
+    disk:
+      name: repo-data
+      mountPath: /data
+      sizeGB: 1
+
+  - type: redis
+    name: repo-analyzer-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []                       # internal only

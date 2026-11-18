@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.venv311/
+
+# Data (re-created at runtime)
+.data/
+
+# Environment
+.env
+
+# Logs
+.runtime-logs/
+
+# OS
+.DS_Store
+Thumbs.db
